@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Canvas</title>
+  <style>
+    body {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+    }
+	
+    canvas {
+      border: 1px solid #000;
+    }
+	
+  </style>
+</head>
+<body>
+
+  <canvas id="canvas" width="400" height="400"></canvas>
+  <script src="/scripts/Player.js"></script>
+  <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+  <script>
+  
+	const canvas = document.getElementById('canvas');
+	const ctx = canvas.getContext('2d');
+	const directions = ['down', 'top', 'right', 'left'];
+	const mapWidth = 600;
+	const mapHeight = 600;
+	const images = {
+		down: [],
+		top: [],
+		right: [],
+		left: []
+	};
+	
+	const socket = io();
+	let grass = new Image();
+	grass.src = `/images/grass.jpg`;
+	let house = new Image();
+	house.src = `/images/house.png`;
+	
+	let playerData ={};
+	let map = [];
+	
+	function loadImage(direction, index) {
+		return new Promise((resolve, reject) => {
+			const img = new Image();
+			img.src = `/images/人/${direction}${index}.png`;
+			img.onload = () => resolve(img);
+			img.onerror = () => reject(new Error(`Failed to load image: ${img.src}`));
+		});
+	}
+	
+	async function init() {
+	
+		for(let i=0;i<directions.length;i++)
+		{
+			for(let j=1;j<=4;j++)
+			{
+				let img = await loadImage(directions[i],j);
+				images[directions[i]].push(img);
+			}
+		}
+	
+		
+	}
+	
+	init().then(()=>{
+		console.log('載入成功');
+		gameLoop();
+	})
+	
+	socket.on('currentPlayer', (currentPlayer) => {
+		
+		for (let [key, value] of Object.entries(currentPlayer)) {
+			playerData[key] = new Player(value.x,value.y,value.width,value.height);
+			playerData[key].imgs = images['right'];
+		}
+		
+	});
+	
+	socket.on('currentMap', (currentMap) => {
+		map = JSON.parse(currentMap)
+	});
+	
+	socket.on('playersMove', (currentPlayer) => {
+		
+		
+		for (let [key, value] of Object.entries(currentPlayer)) {
+		
+			playerData[key].x = value.x;
+			playerData[key].y = value.y;
+			playerData[key].keyPress = value.keyPress;
+			
+			switch(value.keyPress)
+			{
+				case 'ArrowRight':
+					playerData[key].imgs = images['right'];
+					break;
+				case 'ArrowLeft':
+					playerData[key].imgs = images['left'];
+					break;
+				case 'ArrowDown':
+					playerData[key].imgs = images['down'];
+					break;
+				case 'ArrowUp':
+					playerData[key].imgs = images['top'];
+					break;
+					
+			}
+			
+		}
+		
+		//console.log(playerData);
+	});
+	socket.on('checkPlayer', (checkPlayer) => {
+		console.log(checkPlayer);
+		playerData[socket.id].x = checkPlayer.temx;
+		playerData[socket.id].y = checkPlayer.tempY;
+	});
+	socket.on('delete', (id) => {
+		delete playerData[id];
+	});
+	
+	function gameLoop()
+	{
+		clearCanvas();
+		
+		let offsetX = Math.max(0, Math.min(playerData[socket.id].x - canvas.width / 2, mapWidth - canvas.width));
+		let offsetY = Math.max(0, Math.min(playerData[socket.id].y - canvas.height / 2, mapHeight - canvas.height));
+		
+		for(let i=0;i<map.length;i++)
+		{
+			for(let j=0;j<map[i].length;j++)
+			{
+				ctx.drawImage(grass, j*30-offsetX, i*30-offsetY, 30, 30);
+			}
+		}
+		
+		for(let i=0;i<map.length;i++)
+		{
+			for(let j=0;j<map[i].length;j++)
+			{
+				if(map[i][j]==1)
+				{
+					ctx.drawImage(house, j*30-offsetX, i*30-offsetY, 120, 120);
+				}
+			}
+		}
+		
+		for (let [key, value] of Object.entries(playerData)) {
+		
+			value.move();
+			//playerData[socket.id].move();
+			socket.emit('checkPlayer', true);
+			socket.emit('playersMove', playerData[socket.id]);
+			
+			value.draw(offsetX,offsetY);
+			
+		}
+		
+		
+		requestAnimationFrame(gameLoop); 
+	}
+	
+	function clearCanvas() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+    }
+	
+	window.addEventListener('keydown', function(event) {
+	
+		
+		
+		if (event.key === 'ArrowRight') {
+			playerData[socket.id].imgs = images['right'];
+			playerData[socket.id].keyPress = 'ArrowRight';
+			socket.emit('playersMove', playerData[socket.id]);
+		}
+		
+		if (event.key === 'ArrowLeft') {
+			playerData[socket.id].imgs = images['left'];
+			playerData[socket.id].keyPress = 'ArrowLeft';
+			socket.emit('playersMove', playerData[socket.id]);
+		}
+		
+		if (event.key === 'ArrowDown') {
+			playerData[socket.id].imgs = images['down'];
+			playerData[socket.id].keyPress = 'ArrowDown';
+			socket.emit('playersMove', playerData[socket.id]);
+		}
+		
+		if (event.key === 'ArrowUp') {
+			playerData[socket.id].imgs = images['top'];
+			playerData[socket.id].keyPress = 'ArrowUp';
+			socket.emit('playersMove', playerData[socket.id]);
+		}
+		
+	});
+	
+	document.addEventListener('keyup', function(event) {
+	 
+		if (event.key === 'ArrowRight') {
+			playerData[socket.id].keyPress = '';
+			socket.emit('playersMove', playerData[socket.id]);
+		}
+
+		if (event.key === 'ArrowLeft') {
+			playerData[socket.id].keyPress = '';
+			socket.emit('playersMove', playerData[socket.id]);
+		}
+		
+		if (event.key === 'ArrowDown') {
+			playerData[socket.id].keyPress = '';
+			socket.emit('playersMove', playerData[socket.id]);
+		}
+		
+		if (event.key === 'ArrowUp') {
+			playerData[socket.id].keyPress = '';
+			socket.emit('playersMove', playerData[socket.id]);
+		}
+		
+	});
+	
+  </script>
+</body>
+</html>

@@ -19,4 +19,7 @@ jobs:
       - name: npm install, build and test
         run: |
           npm install
+      - name: Run Node.js application
+        run: |
+          node index.js
           

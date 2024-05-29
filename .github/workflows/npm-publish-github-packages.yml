@@ -1,17 +1,14 @@
 on:
   push:
+    branches:
+      - main
     jobs:
-      build-node:
+      build:
         runs-on: ubuntu-latest
-        container: node:14
         steps:
-          - name: Check Node.js version
-            run: node --version
-          - name: Check npm version
-            run: npm --version
-          - name: Checkout code
-            uses: actions/checkout@v3
-          - name: Install dependencies
-            run: npm install
-          - name: Run Node.js application
-            run: node index.js
+          - name: Check out code
+            uses: actions/checkout@v2
+          - name: Run a one-line script
+            run: echo Hello, world!
+          - name: Run another script
+            run: echo This is another script.

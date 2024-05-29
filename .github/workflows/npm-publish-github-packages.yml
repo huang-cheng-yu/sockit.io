@@ -1,14 +1,23 @@
+name: 部署 PM2 專案
+
 on:
-  push:
+  push: 
     branches:
-      - main
-    jobs:
-      build:
-        runs-on: ubuntu-latest
-        steps:
-          - name: Check out code
-            uses: actions/checkout@v2
-          - name: Run a one-line script
-            run: echo Hello, world!
-          - name: Run another script
-            run: echo This is another script.
+      - feature/action-pm2
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v1
+      
+      - name: Install Node.js
+        uses: actions/setup-node@v1
+        with:
+          node-version: 18
+
+      - name: npm install, build and test
+        run: |
+          npm install
+          

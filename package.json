@@ -1,13 +1,6 @@
 {
   "name": "sockit-io-app",
-  "version": "1.0.0",
-  "description": "A Node.js application using Express and Socket.io",
-  "main": "index.js",
-  "scripts": {
-    "start": "node index.js",
-    "test": "echo \"No test specified\" && exit 0",
-    "build": "echo \"Building the project...\" && exit 0"
-  },
+  "main":"index.js",
   "dependencies": {
     "express": "^4.19.2",
     "socket.io": "^4.7.5"

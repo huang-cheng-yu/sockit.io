@@ -6,7 +6,7 @@
   "scripts": {
     "start": "node index.js",
     "test": "echo \"No test specified\" && exit 0",
-    "build": "echo \"Building the project...\" && exit 0" // 如果没有实际的构建步骤，可以这样写
+    "build": "echo \"Building the project...\" && exit 0"
   },
   "dependencies": {
     "express": "^4.19.2",

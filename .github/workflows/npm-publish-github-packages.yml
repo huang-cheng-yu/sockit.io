@@ -21,8 +21,6 @@ jobs:
       - name: Install dependencies
         run: npm install
 
-      - name: Build application (if needed)
-        run: npm run build # 如果需要构建，请替换成实际的构建命令
 
       - name: Start Express server
         run: npm start

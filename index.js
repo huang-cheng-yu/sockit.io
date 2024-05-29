@@ -131,45 +131,69 @@ io.on('connection', (socket) => {
 	io.emit('currentMap', JSON.stringify(map));
 	
 	socket.on('playersMove', (moveData) => {
+
+		socketData[socket.id].keyPress = moveData.keyPress;
 		
-		let isC = false;
-		let tempX = socketData[socket.id].x;
-		
-		for (let [outerKey, innerValue] of Object.entries(socketData)) {
+		if(moveData.keyPress == '')
+		{
 			
-			if (outerKey !== socket.id) {
-				//console.log(outerValue,innerKey);
-				if 
-				(
-					moveData.x < innerValue.x + innerValue.width &&
-					moveData.x + socketData[socket.id].width > innerValue.x &&
-					moveData.y < innerValue.y + innerValue.height &&
-					moveData.y + socketData[socket.id].height > innerValue.y
-				){
-					//console.log(1);
-					//io.emit('checkPlayer', {temx:tempData[outerKey].x,tempY:tempData[outerKey].y});
-					isC =true;
-					break;
-				}
-				
+			socketData[socket.id].moveCount =0;
+			socketData[socket.id].current =0;
+		}
+
+		if(moveData.keyPress == 'ArrowRight')
+		{
+			socketData[socket.id].x = Math.min(600-socketData[socket.id].width, socketData[socket.id].x + socketData[socket.id].vx);
+			socketData[socket.id].y = moveData.y;
+			socketData[socket.id].moveCount++;
+			if(socketData[socket.id].moveCount >=5)
+			{
+				socketData[socket.id].current =(socketData[socket.id].current+1) % 4;
+				socketData[socket.id].moveCount = 0;
 			}
-	   }
-	   
-	   if(isC)
-	   {
-		  io.emit('playersMove', socketData);
-	   }else{
-		    socketData[socket.id].x = moveData.x;
-		   socketData[socket.id].y = moveData.y;
-		   socketData[socket.id].keyPress = moveData.keyPress;
-		   socketData[socket.id].moveCount = moveData.moveCount;
-		   socketData[socket.id].current = moveData.current;
-		   io.emit('playersMove', socketData);
-		   
-	   }
-	   
-	   
-	   
+			
+		}
+		
+		if(moveData.keyPress == 'ArrowLeft')
+		{
+			socketData[socket.id].x = Math.max(0, socketData[socket.id].x - socketData[socket.id].vx);
+			socketData[socket.id].y = moveData.y;
+			socketData[socket.id].moveCount++;
+			if(socketData[socket.id].moveCount >=5)
+			{
+				socketData[socket.id].current =(socketData[socket.id].current+1) % 4;
+				socketData[socket.id].moveCount = 0;
+			}
+			
+		}
+		
+		if(moveData.keyPress == 'ArrowUp')
+		{
+			socketData[socket.id].x =  moveData.x;
+			socketData[socket.id].y = Math.max(0, socketData[socket.id].y - socketData[socket.id].vy);
+			socketData[socket.id].moveCount++;
+			if(socketData[socket.id].moveCount >=5)
+			{
+				socketData[socket.id].current =(socketData[socket.id].current+1) % 4;
+				socketData[socket.id].moveCount = 0;
+			}
+			
+		}
+
+		if(moveData.keyPress == 'ArrowDown')
+		{
+			socketData[socket.id].x =  moveData.x;
+			socketData[socket.id].y =Math.min(600-socketData[socket.id].height,socketData[socket.id].y+socketData[socket.id].vy );
+			socketData[socket.id].moveCount++;
+			if(socketData[socket.id].moveCount >=5)
+			{
+				socketData[socket.id].current =(socketData[socket.id].current+1) % 4;
+				socketData[socket.id].moveCount = 0;
+			}
+		}
+
+		io.emit('playersMove', {id:socket.id,data:socketData[socket.id]});
+
     });
 	
 	socket.on('checkPlayer', (checkPlayer) => {

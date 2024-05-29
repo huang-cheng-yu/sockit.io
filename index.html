@@ -90,35 +90,32 @@
 	});
 	
 	socket.on('playersMove', (currentPlayer) => {
-		
-		
-		for (let [key, value] of Object.entries(currentPlayer)) {
-		
-			playerData[key].x = value.x;
-			playerData[key].y = value.y;
-			playerData[key].keyPress = value.keyPress;
-			
-			switch(value.keyPress)
-			{
-				case 'ArrowRight':
-					playerData[key].imgs = images['right'];
-					break;
-				case 'ArrowLeft':
-					playerData[key].imgs = images['left'];
-					break;
-				case 'ArrowDown':
-					playerData[key].imgs = images['down'];
-					break;
-				case 'ArrowUp':
-					playerData[key].imgs = images['top'];
-					break;
-					
-			}
-			
+
+		playerData[currentPlayer.id].x = currentPlayer.data.x;
+		playerData[currentPlayer.id].y = currentPlayer.data.y;
+		playerData[currentPlayer.id].keyPress = currentPlayer.data.keyPress;
+		playerData[currentPlayer.id].moveCount = currentPlayer.data.moveCount;
+		playerData[currentPlayer.id].current = currentPlayer.data.current;
+
+		switch(currentPlayer.data.keyPress)
+		{
+			case 'ArrowRight':
+				playerData[currentPlayer.id].imgs = images['right'];
+				break;
+			case 'ArrowLeft':
+				playerData[currentPlayer.id].imgs = images['left'];
+				break;
+			case 'ArrowDown':
+				playerData[currentPlayer.id].imgs = images['down'];
+				break;
+			case 'ArrowUp':
+				playerData[currentPlayer.id].imgs = images['top'];
+				break;
+				
 		}
-		
-		//console.log(playerData);
+
 	});
+
 	socket.on('checkPlayer', (checkPlayer) => {
 		console.log(checkPlayer);
 		playerData[socket.id].x = checkPlayer.temx;
@@ -153,16 +150,12 @@
 				}
 			}
 		}
-		
+
+		//playerData[socket.id].move();
+		socket.emit('playersMove', playerData[socket.id]);
+
 		for (let [key, value] of Object.entries(playerData)) {
-		
-			value.move();
-			//playerData[socket.id].move();
-			socket.emit('checkPlayer', true);
-			socket.emit('playersMove', playerData[socket.id]);
-			
 			value.draw(offsetX,offsetY);
-			
 		}
 		
 		
@@ -174,31 +167,25 @@
     }
 	
 	window.addEventListener('keydown', function(event) {
-	
-		
 		
 		if (event.key === 'ArrowRight') {
 			playerData[socket.id].imgs = images['right'];
 			playerData[socket.id].keyPress = 'ArrowRight';
-			socket.emit('playersMove', playerData[socket.id]);
 		}
 		
 		if (event.key === 'ArrowLeft') {
 			playerData[socket.id].imgs = images['left'];
 			playerData[socket.id].keyPress = 'ArrowLeft';
-			socket.emit('playersMove', playerData[socket.id]);
 		}
 		
 		if (event.key === 'ArrowDown') {
 			playerData[socket.id].imgs = images['down'];
 			playerData[socket.id].keyPress = 'ArrowDown';
-			socket.emit('playersMove', playerData[socket.id]);
 		}
 		
 		if (event.key === 'ArrowUp') {
 			playerData[socket.id].imgs = images['top'];
 			playerData[socket.id].keyPress = 'ArrowUp';
-			socket.emit('playersMove', playerData[socket.id]);
 		}
 		
 	});

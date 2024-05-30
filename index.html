@@ -39,6 +39,56 @@
 		left: []
 	};
 	
+	class Brick
+	{
+		constructor(x,vx,y,vy,width,height,tempD) {
+		
+			this.x = x;
+			this.vx = vx;
+			
+			this.y = y;
+			this.vy = vy;
+			
+			this.color = 'red';
+			this.width = width;
+			this.height = height;
+			this.ctx = ctx;
+			this.tempD = tempD;
+			
+		}
+		
+		draw(offsetX,offsetY) {
+			this.ctx.fillStyle = this.color; // 设置方块颜色
+			this.ctx.fillRect(this.x-offsetX , this.y-offsetY , this.width, this.height); // 绘制方块
+		}
+		
+		move()
+		{
+			if(this.tempD=='ArrowRight')
+			{
+				this.x += this.vx;
+			}
+			
+			if( this.tempD=='ArrowLeft')
+			{
+				this.x -= this.vx;
+			}
+			
+			if(this.tempD=='ArrowDown')
+			{
+			
+				this.y += this.vy;
+			}
+			
+			if(this.tempD=='ArrowUp' )
+			{
+				this.y -= this.vy;
+			}
+		}
+	}
+	
+	const brickData = [];
+	
 	const socket = io();
 	
 	let grass = new Image();
@@ -82,6 +132,7 @@
 		for (let [key, value] of Object.entries(currentPlayer)) {
 			playerData[key] = new Player(value.x,value.y,value.width,value.height);
 			playerData[key].imgs = images['right'];
+			playerData[key].health = value.health;
 		}
 		
 	});
@@ -118,10 +169,20 @@
 	});
 
 	socket.on('checkPlayer', (checkPlayer) => {
-		console.log(checkPlayer);
 		playerData[socket.id].x = checkPlayer.temx;
 		playerData[socket.id].y = checkPlayer.tempY;
 	});
+	
+	socket.on('attack', (attack) => {
+		//console.log(attack);
+		brickData.push(new Brick(attack.data.x,attack.data.vx,attack.data.y,attack.data.vy,10,10,attack.data.tempD));
+	});
+	
+	socket.on('closePlayer', (closePlayer) => {
+		//console.log(attack);
+		 playerData[closePlayer.id].health = closePlayer.data.health;
+	});
+	
 	socket.on('delete', (id) => {
 		delete playerData[id];
 	});
@@ -151,14 +212,47 @@
 				}
 			}
 		}
-
-		//playerData[socket.id].move();
+		
+		for(let i=0;i<brickData.length;i++)
+		{
+			brickData[i].move();
+			
+			if (brickData[i].x < 0 || brickData[i].y < 0 || brickData[i].x >mapWidth || brickData[i].y > mapHeight ) {
+				// 移除当前砖块
+				brickData.splice(i, 1);
+				// 因为移除了当前元素，数组长度减少，需要调整索引
+				i--;
+				continue; // 跳过当前循环，继续下一个
+			}
+			
+			socket.emit('attackMove', {x:brickData[i].x,y:brickData[i].y,width:brickData[i].width,height:brickData[i].height});
+		}
+		
 		socket.emit('playersMove', playerData[socket.id]);
+		
+		// 將 playerData 轉換為一個包含鍵值對的陣列
+		let playerArray = Object.entries(playerData);
 
+		// 按 y 屬性從大到小排序
+		playerArray.sort(([, a], [, b]) => a.y - b.y );
+
+		// 將排序後的結果轉換回物件形式
+		let sortedPlayerData = {};
+		playerArray.forEach(([key, value]) => {
+			sortedPlayerData[key] = value;
+		});
+
+		// 更新原始的 playerData
+		playerData = sortedPlayerData;
+				
 		for (let [key, value] of Object.entries(playerData)) {
 			value.draw(offsetX,offsetY);
 		}
 		
+		for(let i=0;i<brickData.length;i++)
+		{
+			brickData[i].draw(offsetX,offsetY);
+		}
 		
 		requestAnimationFrame(gameLoop); 
 	}
@@ -170,25 +264,53 @@
 	window.addEventListener('keydown', function(event) {
 		
 		if (event.key === 'ArrowRight') {
-			playerData[socket.id].imgs = images['right'];
-			playerData[socket.id].keyPress = 'ArrowRight';
+			
+			if(playerData[socket.id].keyPress =='')
+			{
+				playerData[socket.id].imgs = images['right'];
+				playerData[socket.id].keyPress = 'ArrowRight';
+				socket.emit('playersMove', playerData[socket.id]);
+			}
 		}
 		
 		if (event.key === 'ArrowLeft') {
-			playerData[socket.id].imgs = images['left'];
-			playerData[socket.id].keyPress = 'ArrowLeft';
+		
+			if(playerData[socket.id].keyPress =='')
+			{
+				playerData[socket.id].imgs = images['left'];
+				playerData[socket.id].keyPress = 'ArrowLeft';
+				socket.emit('playersMove', playerData[socket.id]);
+			}
 		}
 		
 		if (event.key === 'ArrowDown') {
-			playerData[socket.id].imgs = images['down'];
-			playerData[socket.id].keyPress = 'ArrowDown';
+		
+			if(playerData[socket.id].keyPress =='')
+			{
+				playerData[socket.id].imgs = images['down'];
+				playerData[socket.id].keyPress = 'ArrowDown';
+				socket.emit('playersMove', playerData[socket.id]);
+			}
 		}
 		
 		if (event.key === 'ArrowUp') {
-			playerData[socket.id].imgs = images['top'];
-			playerData[socket.id].keyPress = 'ArrowUp';
+		
+			if(playerData[socket.id].keyPress =='')
+			{
+				playerData[socket.id].imgs = images['top'];
+				playerData[socket.id].keyPress = 'ArrowUp';
+				socket.emit('playersMove', playerData[socket.id]);
+			}
 		}
 		
+		if (event.key === ' ') {
+		
+			if(playerData[socket.id].attack =='')
+			{
+				playerData[socket.id].attack = event.key;
+				socket.emit('playersMove', playerData[socket.id]);
+			}
+		}
 	});
 	
 	document.addEventListener('keyup', function(event) {
@@ -213,6 +335,10 @@
 			socket.emit('playersMove', playerData[socket.id]);
 		}
 		
+		if (event.key === ' ') {
+			playerData[socket.id].attack = '';
+			socket.emit('playersMove', playerData[socket.id]);
+		}
 	});
 	
   </script>

@@ -19,12 +19,17 @@ class Player
 		this.y = y;
 		this.width = width;
 		this.height = height;
-		this.vx = 4;
-		this.vy = 4;
+		this.vx = 2;
+		this.vy = 2;
 		this.current = 0;
-		this.keyPress = '';
+		this.keyPress = 'ArrowRight';
+		this.attack = ' ';
+		this.tempD = 'ArrowRight';
 		this.moveCount = 0;
+		this.attackCount = 0;
 		this.imgs = [];
+		this.health = 100;
+		this.maxHealth = 100;
 	}
 	
 	draw(offsetX,offsetY)
@@ -116,6 +121,7 @@ let map =
 	[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
 ];
 
+let attackData = {};
 
 app.get('/', (req, res) => {
   res.sendFile(__dirname + '/index.html');
@@ -138,12 +144,14 @@ io.on('connection', (socket) => {
 	io.emit('currentMap', JSON.stringify(map));
 	
 	socket.on('playersMove', (moveData) => {
-
+		
+		let tempX = socketData[socket.id].x;
+		let tempY = socketData[socket.id].y;
+		
 		socketData[socket.id].keyPress = moveData.keyPress;
 		
 		if(moveData.keyPress == '')
 		{
-			
 			socketData[socket.id].moveCount =0;
 			socketData[socket.id].current =0;
 		}
@@ -158,6 +166,7 @@ io.on('connection', (socket) => {
 				socketData[socket.id].current =(socketData[socket.id].current+1) % 4;
 				socketData[socket.id].moveCount = 0;
 			}
+			socketData[socket.id].tempD =  moveData.keyPress;
 			
 		}
 		
@@ -171,7 +180,7 @@ io.on('connection', (socket) => {
 				socketData[socket.id].current =(socketData[socket.id].current+1) % 4;
 				socketData[socket.id].moveCount = 0;
 			}
-			
+			socketData[socket.id].tempD =  moveData.keyPress;
 		}
 		
 		if(moveData.keyPress == 'ArrowUp')
@@ -184,7 +193,7 @@ io.on('connection', (socket) => {
 				socketData[socket.id].current =(socketData[socket.id].current+1) % 4;
 				socketData[socket.id].moveCount = 0;
 			}
-			
+			socketData[socket.id].tempD =  moveData.keyPress;
 		}
 
 		if(moveData.keyPress == 'ArrowDown')
@@ -197,15 +206,101 @@ io.on('connection', (socket) => {
 				socketData[socket.id].current =(socketData[socket.id].current+1) % 4;
 				socketData[socket.id].moveCount = 0;
 			}
+			socketData[socket.id].tempD =  moveData.keyPress;
 		}
+		
+		if(true)
+		{
+			let x ;
+			let y ;
+			
+			if(socketData[socket.id].tempD=='ArrowRight')
+			{
+				x = socketData[socket.id].x+socketData[socket.id].width;
+				y = socketData[socket.id].y+socketData[socket.id].height/2;
+			}
+			
+			if(socketData[socket.id].tempD=='ArrowLeft')
+			{
+				x = socketData[socket.id].x;
+				y = socketData[socket.id].y+socketData[socket.id].height/2;
+			}
+			
+			if(socketData[socket.id].tempD=='ArrowDown')
+			{
+				x = socketData[socket.id].x+(socketData[socket.id].width/2)-5;
+				y = socketData[socket.id].y+socketData[socket.id].height;
+			}
+			
+			if(socketData[socket.id].tempD=='ArrowUp')
+			{
+				x = socketData[socket.id].x+(socketData[socket.id].width/2)-5;
+				y = socketData[socket.id].y;
+			}
+			
+			
+			if(socketData[socket.id].attackCount==0)
+			{
+				io.emit('attack', {id:socket.id,data:{x:x,y:y,tempD:socketData[socket.id].tempD,vx:4,vy:4}});
+			}
+			
+			socketData[socket.id].attackCount++;
+			if(socketData[socket.id].attackCount >=15){
+				socketData[socket.id].attackCount =0;
+			}
+				
 
+		}
+		
+		for (let [key, value] of Object.entries(socketData)) 
+		{
+			
+			if(key==socket.id)
+			{
+				continue;
+			}
+			
+			if 
+			(
+				socketData[socket.id].x < socketData[key].x + socketData[key].width &&
+				socketData[socket.id].x + socketData[socket.id].width > socketData[key].x &&
+				socketData[socket.id].y+15 < socketData[key].y + socketData[key].height &&
+				socketData[socket.id].y + socketData[socket.id].height-15 > socketData[key].y
+			){
+				socketData[socket.id].x =tempX;
+				socketData[socket.id].y =tempY;
+			}
+		}
+			
 		io.emit('playersMove', {id:socket.id,data:socketData[socket.id]});
-
+	
     });
 	
-	socket.on('checkPlayer', (checkPlayer) => {
+	socket.on('attackMove', (attackMove) => {
 		
-		
+		for (let [key, value] of Object.entries(socketData)) 
+		{
+			if(key==socket.id)
+			{
+				continue;
+			}
+			
+			if 
+			(
+				attackMove.x < socketData[key].x + socketData[key].width &&
+				attackMove.x + attackMove.width > socketData[key].x &&
+				attackMove.y < socketData[key].y + socketData[key].height &&
+				attackMove.y + attackMove.height > socketData[key].y
+			){
+				//console.log(1);
+				socketData[key].health -=1;
+				if(socketData[key].health<=0)
+				{
+					socketData[key].health =0;
+				}
+				io.emit('closePlayer', {id:key,data:socketData[key]});
+			}
+		}
 		
     });
 	

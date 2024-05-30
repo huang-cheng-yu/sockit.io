@@ -39,9 +39,7 @@
 		left: []
 	};
 	
-	const socket = io('https://sockit-io.vercel.app', {
-      transports: ['websocket']
-    });
+	const socket = io();
 	
 	let grass = new Image();
 	grass.src = `/images/grass.jpg`;

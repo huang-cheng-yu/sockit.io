@@ -24,7 +24,7 @@
 
   <canvas id="canvas" width="400" height="400"></canvas>
   <script src="/scripts/Player.js"></script>
-  <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+  <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
   <script>
   
 	const canvas = document.getElementById('canvas');
@@ -39,7 +39,10 @@
 		left: []
 	};
 	
-	const socket = io();
+	const socket = io('https://sockit-io.vercel.app', {
+      transports: ['websocket']
+    });
+	
 	let grass = new Image();
 	grass.src = `/images/grass.jpg`;
 	let house = new Image();

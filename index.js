@@ -241,7 +241,9 @@ io.on('connection', (socket) => {
 			
 			if(socketData[socket.id].attackCount==0)
 			{
-				io.emit('attack', {id:socket.id,data:{x:x,y:y,tempD:socketData[socket.id].tempD,vx:4,vy:4}});
+				let id = 'id-' + Date.now() + '-' + Math.floor(Math.random() * 10000);
+				attackData[id] =  {id:id,data:{x:x,y:y,tempD:socketData[socket.id].tempD,vx:4,vy:4}};
+				io.emit('attack', {id:id,data:{x:x,y:y,tempD:socketData[socket.id].tempD,vx:4,vy:4}});
 			}
 			
 			socketData[socket.id].attackCount++;
@@ -278,6 +280,11 @@ io.on('connection', (socket) => {
 	
 	socket.on('attackMove', (attackMove) => {
 		
+		//console.log(attackMove.id);
+		attackData[attackMove.id].x = attackMove.x;
+		attackData[attackMove.id].y = attackMove.y;
+		io.emit('updateAttack', {id:attackMove.id,x:attackData[attackMove.id].x,y:attackData[attackMove.id].y });
+		
 		for (let [key, value] of Object.entries(socketData)) 
 		{
 			if(key==socket.id)
@@ -287,10 +294,10 @@ io.on('connection', (socket) => {
 			
 			if 
 			(
-				attackMove.x < socketData[key].x + socketData[key].width &&
-				attackMove.x + attackMove.width > socketData[key].x &&
-				attackMove.y < socketData[key].y + socketData[key].height &&
-				attackMove.y + attackMove.height > socketData[key].y
+				attackData[attackMove.id].x < socketData[key].x + socketData[key].width &&
+				attackData[attackMove.id].x + attackData[attackMove.id].width > socketData[key].x &&
+				attackData[attackMove.id].y < socketData[key].y + socketData[key].height &&
+				attackData[attackMove.id].y + attackData[attackMove.id].height > socketData[key].y
 			){
 				//console.log(1);
 				socketData[key].health -=1;

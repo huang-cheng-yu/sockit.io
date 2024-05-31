@@ -41,7 +41,7 @@
 	
 	class Brick
 	{
-		constructor(x,vx,y,vy,width,height,tempD) {
+		constructor(x,vx,y,vy,width,height,tempD,id) {
 		
 			this.x = x;
 			this.vx = vx;
@@ -54,7 +54,7 @@
 			this.height = height;
 			this.ctx = ctx;
 			this.tempD = tempD;
-			
+			this.id = id;
 		}
 		
 		draw(offsetX,offsetY) {
@@ -87,7 +87,7 @@
 		}
 	}
 	
-	const brickData = [];
+	const brickData = {};
 	
 	const socket = io();
 	
@@ -130,9 +130,34 @@
 	socket.on('currentPlayer', (currentPlayer) => {
 		
 		for (let [key, value] of Object.entries(currentPlayer)) {
-			playerData[key] = new Player(value.x,value.y,value.width,value.height);
-			playerData[key].imgs = images['right'];
-			playerData[key].health = value.health;
+		
+			if(!playerData[key])
+			{
+				playerData[key] = new Player(value.x,value.y,value.width,value.height);
+				playerData[key].imgs = images['right'];
+				playerData[key].health = value.health;
+				playerData[key].tempD = value.tempD;
+				
+			}else{
+			
+				switch(value.keyPress)
+				{
+					case 'ArrowRight':
+						playerData[key].imgs = images['right'];
+						break;
+					case 'ArrowLeft':
+						playerData[key].imgs = images['left'];
+						break;
+					case 'ArrowDown':
+						playerData[key].imgs = images['down'];
+						break;
+					case 'ArrowUp':
+						playerData[key].imgs = images['top'];
+						break;
+						
+				}
+			}
+			
 		}
 		
 	});
@@ -175,7 +200,13 @@
 	
 	socket.on('attack', (attack) => {
 		//console.log(attack);
-		brickData.push(new Brick(attack.data.x,attack.data.vx,attack.data.y,attack.data.vy,10,10,attack.data.tempD));
+		//brickData.push(new Brick(attack.data.x,attack.data.vx,attack.data.y,attack.data.vy,10,10,attack.data.tempD));
+		brickData[attack.id] = new Brick(attack.data.x,attack.data.vx,attack.data.y,attack.data.vy,10,10,attack.data.tempD,attack.id);
+	});
+	
+	socket.on('updateAttack', (updateAttack) => {
+		brickData[updateAttack.id].x = updateAttack.x;
+		brickData[updateAttack.id].y = updateAttack.y;
 	});
 	
 	socket.on('closePlayer', (closePlayer) => {
@@ -213,19 +244,17 @@
 			}
 		}
 		
-		for(let i=0;i<brickData.length;i++)
+		for (let [key, value] of Object.entries(brickData)) 
 		{
-			brickData[i].move();
+			value.move();
 			
-			if (brickData[i].x < 0 || brickData[i].y < 0 || brickData[i].x >mapWidth || brickData[i].y > mapHeight ) {
+			if (value.x < 0 || value.y < 0 || value.x >mapWidth || value.y > mapHeight ) {
 				// 移除当前砖块
-				brickData.splice(i, 1);
-				// 因为移除了当前元素，数组长度减少，需要调整索引
-				i--;
+				delete brickData[key];
 				continue; // 跳过当前循环，继续下一个
 			}
 			
-			socket.emit('attackMove', {x:brickData[i].x,y:brickData[i].y,width:brickData[i].width,height:brickData[i].height});
+			socket.emit('attackMove', {x:value.x,y:value.y,width:value.width,height:value.height,id:value.id});
 		}
 		
 		socket.emit('playersMove', playerData[socket.id]);
@@ -249,9 +278,9 @@
 			value.draw(offsetX,offsetY);
 		}
 		
-		for(let i=0;i<brickData.length;i++)
+		for (let [key, value] of Object.entries(brickData)) 
 		{
-			brickData[i].draw(offsetX,offsetY);
+			value.draw(offsetX,offsetY);
 		}
 		
 		requestAnimationFrame(gameLoop); 

@@ -55,6 +55,7 @@
 			this.ctx = ctx;
 			this.tempD = tempD;
 			this.id = id;
+			
 		}
 		
 		draw(offsetX,offsetY) {
@@ -64,6 +65,8 @@
 		
 		move()
 		{
+			
+			
 			if(this.tempD=='ArrowRight')
 			{
 				this.x += this.vx;
@@ -84,6 +87,8 @@
 			{
 				this.y -= this.vy;
 			}
+			
+			
 		}
 	}
 	

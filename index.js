@@ -122,6 +122,7 @@ let map =
 ];
 
 let attackData = {};
+let test =true;
 
 app.get('/', (req, res) => {
   res.sendFile(__dirname + '/index.html');
@@ -209,7 +210,7 @@ io.on('connection', (socket) => {
 			socketData[socket.id].tempD =  moveData.keyPress;
 		}
 		
-		if(true)
+		if(test)
 		{
 			let x ;
 			let y ;
@@ -242,7 +243,7 @@ io.on('connection', (socket) => {
 			if(socketData[socket.id].attackCount==0)
 			{
 				let id = 'id-' + Date.now() + '-' + Math.floor(Math.random() * 10000);
-				attackData[id] =  {id:id,data:{x:x,y:y,tempD:socketData[socket.id].tempD,vx:4,vy:4}};
+				attackData[id] =  {id:id,data:{x:x,y:y,tempD:socketData[socket.id].tempD,vx:4,vy:4,width:10,height:10}};
 				io.emit('attack', {id:id,data:{x:x,y:y,tempD:socketData[socket.id].tempD,vx:4,vy:4}});
 			}
 			
@@ -251,7 +252,7 @@ io.on('connection', (socket) => {
 				socketData[socket.id].attackCount =0;
 			}
 				
-
+			test = true;
 		}
 		
 		for (let [key, value] of Object.entries(socketData)) 
@@ -280,11 +281,12 @@ io.on('connection', (socket) => {
 	
 	socket.on('attackMove', (attackMove) => {
 		
-		//console.log(attackMove.id);
-		attackData[attackMove.id].x = attackMove.x;
-		attackData[attackMove.id].y = attackMove.y;
-		io.emit('updateAttack', {id:attackMove.id,x:attackData[attackMove.id].x,y:attackData[attackMove.id].y });
 		
+		attackData[attackMove.id].data.x =attackMove.x;
+		attackData[attackMove.id].data.y =attackMove.y;
+		
+		io.emit('updateAttack', {id:attackMove.id,x:attackData[attackMove.id].data.x,y:attackData[attackMove.id].data.y });
+
 		for (let [key, value] of Object.entries(socketData)) 
 		{
 			if(key==socket.id)
@@ -294,10 +296,10 @@ io.on('connection', (socket) => {
 			
 			if 
 			(
-				attackData[attackMove.id].x < socketData[key].x + socketData[key].width &&
-				attackData[attackMove.id].x + attackData[attackMove.id].width > socketData[key].x &&
-				attackData[attackMove.id].y < socketData[key].y + socketData[key].height &&
-				attackData[attackMove.id].y + attackData[attackMove.id].height > socketData[key].y
+				attackData[attackMove.id].data.x < socketData[key].x + socketData[key].width &&
+				attackData[attackMove.id].data.x + attackData[attackMove.id].data.width > socketData[key].x &&
+				attackData[attackMove.id].data.y < socketData[key].y + socketData[key].height &&
+				attackData[attackMove.id].data.y + attackData[attackMove.id].data.height > socketData[key].y
 			){
 				//console.log(1);
 				socketData[key].health -=1;
@@ -308,6 +310,8 @@ io.on('connection', (socket) => {
 				io.emit('closePlayer', {id:key,data:socketData[key]});
 			}
 		}
+
+		
 		
     });
 	
